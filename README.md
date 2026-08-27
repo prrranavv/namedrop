@@ -28,6 +28,7 @@ Rename safely and append a hash-verified undo record
 - Starts at login and automatically restarts after a crash.
 - Sleeps on macOS file events, so idle CPU usage is effectively zero.
 - Briefly shows a compact, focusless toast with a small icon and the old and new filename.
+- Keeps generated names to two or three words and omits dates.
 - Stacks up to four simultaneous rename toasts; a fifth replaces the oldest visible one.
 - Never overwrites an existing file; duplicates receive `(2)`, `(3)`, and so on.
 - Treats document content as untrusted data and sanitizes model output before renaming.

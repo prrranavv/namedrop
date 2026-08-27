@@ -152,23 +152,13 @@ def structured_stem(text: str) -> str:
     document_type = facts.get("Document type")
     if not entity or not document_type:
         return ""
-    parts = [entity]
-    carrier = facts.get("Carrier")
-    if carrier:
-        carrier = re.sub(
-            r"\s+(?:Specialty Insurance Company|Insurance Company|Indemnity Company)$", "", carrier, flags=re.I
-        ).strip()
-        if carrier and carrier.lower() not in entity.lower():
-            parts.append(carrier)
-    parts.append(document_type)
-    date_source = facts.get("Effective date") or facts.get("Policy term", "")
-    date_match = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})", date_source)
-    if date_match:
-        month, day, year = date_match.groups()
-        parts.append(f"{year}-{int(month):02d}-{int(day):02d}")
-    elif facts.get("Identifier"):
-        parts.append(facts["Identifier"].upper().replace(" ", ""))
-    return " - ".join(parts)
+    entity_words = [
+        word
+        for word in re.findall(r"[A-Za-z0-9][A-Za-z0-9'&.-]*", entity)
+        if word.lower().strip(".") not in {"a", "an", "the", "and", "of", "r", "us", "dba", "llc", "inc", "corp", "ltd"}
+    ][:2]
+    kind = document_type.split()[-1]
+    return " ".join(entity_words + [kind]) if entity_words else ""
 
 
 def clean_stem(raw: str) -> str:
@@ -179,12 +169,51 @@ def clean_stem(raw: str) -> str:
     stem = re.sub(r"[/:*?\"<>|\\\x00-\x1f]", " ", stem)
     stem = re.sub(r"\s+", " ", stem).strip(" .-_()")
     stem = re.sub(r"\s+-\s+(LLC|Inc\.?|Corp\.?|Ltd\.?)\b", r" \1", stem, flags=re.I)
-    stem = re.sub(
-        r"\b(0?[1-9]|1[0-2])[ /-](0?[1-9]|[12]\d|3[01])[ /-]((?:19|20)\d{2})\b",
-        lambda match: f"{match.group(3)}-{int(match.group(1)):02d}-{int(match.group(2)):02d}",
+    stem = re.sub(r"\b(?:19|20)\d{2}[- /]\d{1,2}[- /]\d{1,2}\b", " ", stem)
+    stem = re.sub(r"\b\d{1,2}[- /]\d{1,2}[- /](?:19|20)?\d{2}\b", " ", stem)
+    stem = re.sub(r"\s+", " ", stem).strip(" .-_")
+    kind = ""
+    kind_patterns = [
+        (r"\b(?:receipt)\b", "Receipt"),
+        (r"\b(?:quotation|quote|proposal)\b", "Quote"),
+        (r"\b(?:application|app)\b", "Application"),
+        (r"\b(?:coverage part|declarations?|policy)\b", "Policy"),
+        (r"\b(?:invoice|bill)\b", "Invoice"),
+        (r"\b(?:license)\b", "License"),
+        (r"\b(?:agreement|contract)\b", "Agreement"),
+        (r"\b(?:report)\b", "Report"),
+        (r"\b(?:statement)\b", "Statement"),
+        (r"\b(?:form)\b", "Form"),
+    ]
+    for pattern, label in kind_patterns:
+        if re.search(pattern, stem, flags=re.I):
+            kind = label
+            break
+
+    segments = re.split(r"\s+-\s+", stem)
+    entity_source = next(
+        (
+            segment
+            for segment in segments
+            if not re.search(r"(?i)underwriters?|insurance company|indemnity company|specialty insurance|carrier", segment)
+            and not any(re.search(pattern, segment, flags=re.I) for pattern, _ in kind_patterns)
+        ),
         stem,
     )
-    return stem[:140].strip()
+    ignored = {
+        "a", "an", "the", "and", "of", "for", "r", "us", "dba", "llc", "inc", "corp", "ltd",
+        "insurance", "company", "document", "file", "coverage", "part", "quote", "quotation", "proposal",
+        "application", "policy", "receipt", "invoice", "license", "agreement", "contract", "report", "statement", "form",
+    }
+    entity_words = [
+        word.title() if word.isupper() and len(word) > 4 else word
+        for word in re.findall(r"[A-Za-z0-9][A-Za-z0-9'&.]*", entity_source)
+        if word.lower().strip(".") not in ignored and not word.isdigit()
+    ]
+    if kind and entity_words:
+        return " ".join(entity_words[:2] + [kind])
+    words = re.findall(r"[A-Za-z0-9][A-Za-z0-9'&.]*", stem)
+    return " ".join(words[:3]).strip(" .-_")
 
 
 def current_name_is_useful(path: Path) -> bool:
@@ -196,6 +225,8 @@ def current_name_is_useful(path: Path) -> bool:
     if re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}.*", stem):
         return False
     words = re.findall(r"[A-Za-z]{2,}", stem)
+    if len(words) > 3 or re.search(r"\b(?:19|20)\d{2}[-_/]\d{1,2}(?:[-_/]\d{1,2})?\b", stem):
+        return False
     return bool(
         len(words) >= 3
         or (len(words) >= 2 and re.search(r"(?i)requirements|receipt|license|policy|quote|application|form|supplemental|acord|invoice|\bbor\b", stem))
