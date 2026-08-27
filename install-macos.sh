@@ -9,25 +9,50 @@ STATE_DIR="$HOME/Library/Application Support/NameDrop"
 VENV_DIR="$STATE_DIR/venv"
 APP_DIR="$HOME/Applications/NameDrop.app"
 APP_BINARY="$APP_DIR/Contents/MacOS/NameDrop"
+SIGNING_IDENTITY="${NAMEDROP_SIGNING_IDENTITY:--}"
+
+if security find-identity -v -p codesigning 2>/dev/null | grep -Fq '"NameDrop Local Code Signing"'; then
+  SIGNING_IDENTITY="NameDrop Local Code Signing"
+fi
+
+descendant_pids() {
+  local parent_pid="$1"
+  local child_pid=""
+
+  while IFS= read -r child_pid; do
+    [[ -n "$child_pid" ]] || continue
+    descendant_pids "$child_pid"
+    print -r -- "$child_pid"
+  done < <(pgrep -P "$parent_pid" || true)
+}
 
 stop_existing_job() {
   local domain="gui/$(id -u)"
   local host_pid=""
-  local worker_pids=""
-  local worker_pid=""
+  local process_pids=""
+  local process_pid=""
 
   host_pid="$(launchctl print "$domain/$LABEL" 2>/dev/null | awk '/^[[:space:]]*pid =/ {print $3; exit}' || true)"
   if [[ -n "$host_pid" ]]; then
-    worker_pids="$(pgrep -P "$host_pid" || true)"
+    process_pids="$(descendant_pids "$host_pid")"
   fi
 
   launchctl bootout "$domain/$LABEL" 2>/dev/null || true
 
-  if [[ -n "$worker_pids" ]]; then
-    while IFS= read -r worker_pid; do
-      [[ -n "$worker_pid" ]] && kill "$worker_pid" 2>/dev/null || true
-    done <<< "$worker_pids"
+  if [[ -n "$process_pids" ]]; then
+    while IFS= read -r process_pid; do
+      [[ -n "$process_pid" ]] && kill "$process_pid" 2>/dev/null || true
+    done <<< "$process_pids"
   fi
+  [[ -n "$host_pid" ]] && kill "$host_pid" 2>/dev/null || true
+
+  sleep 0.2
+  if [[ -n "$process_pids" ]]; then
+    while IFS= read -r process_pid; do
+      [[ -n "$process_pid" ]] && kill -9 "$process_pid" 2>/dev/null || true
+    done <<< "$process_pids"
+  fi
+  [[ -n "$host_pid" ]] && kill -9 "$host_pid" 2>/dev/null || true
 }
 
 if [[ "$(uname -m)" != "arm64" ]]; then
@@ -69,7 +94,7 @@ cp "$PROJECT_DIR/renamer.py" "$APP_DIR/Contents/Resources/renamer.py"
 cp "$PROJECT_DIR/bin/namedrop-namer" "$APP_DIR/Contents/Resources/bin/namedrop-namer"
 cp "$PROJECT_DIR/bin/namedrop-toast" "$APP_DIR/Contents/Resources/bin/namedrop-toast"
 cp "$PROJECT_DIR/assets/NameDrop.icns" "$APP_DIR/Contents/Resources/NameDrop.icns"
-codesign --force --deep --sign - "$APP_DIR"
+codesign --force --deep --sign "$SIGNING_IDENTITY" "$APP_DIR"
 
 sed \
   -e "s|__APP_BINARY__|$APP_BINARY|g" \

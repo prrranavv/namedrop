@@ -46,7 +46,12 @@ cd namedrop
 ./install-macos.sh
 ```
 
-The installer creates a private Python environment, compiles the two small Swift helpers, installs a hidden app in `~/Applications`, and registers a per-user LaunchAgent.
+The installer creates a private Python environment, compiles three small Swift helpers, installs a hidden app in `~/Applications`, and registers a per-user LaunchAgent.
+
+Developers who rebuild frequently can set `NAMEDROP_SIGNING_IDENTITY` to a
+stable macOS code-signing identity so Files & Folders permission survives app
+updates. If a local identity named `NameDrop Local Code Signing` exists, the
+installer uses it automatically.
 
 On first launch, allow **NameDrop → Downloads Folder** under **System Settings → Privacy & Security → Files & Folders**. Full Disk Access is not required.
 
