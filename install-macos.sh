@@ -63,6 +63,7 @@ xcrun swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
 cp "$PROJECT_DIR/helper/Info.plist" "$APP_DIR/Contents/Info.plist"
 cp "$PROJECT_DIR/renamer.py" "$APP_DIR/Contents/Resources/renamer.py"
 cp "$PROJECT_DIR/bin/namedrop-namer" "$APP_DIR/Contents/Resources/bin/namedrop-namer"
+cp "$PROJECT_DIR/assets/NameDrop.icns" "$APP_DIR/Contents/Resources/NameDrop.icns"
 codesign --force --deep --sign - "$APP_DIR"
 
 sed \

@@ -8,6 +8,8 @@
   <string>NameDrop</string>
   <key>CFBundleIdentifier</key>
   <string>app.namedrop.agent</string>
+  <key>CFBundleIconFile</key>
+  <string>NameDrop.icns</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>

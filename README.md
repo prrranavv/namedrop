@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/namedrop-icon.png" width="180" alt="NameDrop rubber stamp icon">
+</p>
+
 <h1 align="center">NameDrop</h1>
 
 <p align="center">
@@ -121,4 +125,6 @@ The app and LaunchAgent are moved to Trash. Rename history and the private envir
 
 ## License
 
-MIT
+The code is MIT licensed. The Rubber Stamp icon is a Thiings asset, used under
+its separate license and excluded from the MIT license. See
+[Third-Party Notices](THIRD_PARTY_NOTICES.md).
