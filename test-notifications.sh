@@ -27,7 +27,7 @@ renamed=(
   "Signed Vendor Agreement.pdf"
 )
 
-echo "Showing $COUNT notification(s). Swipe or drag any card left or right to dismiss it."
+echo "Showing $COUNT compact notification(s). They fade automatically."
 for (( index = 1; index <= COUNT; index++ )); do
   NAMEDROP_ICON="$ICON" "$TOAST" "${originals[$index]}" "${renamed[$index]}" "$((index - 1))" &
   sleep 0.12
