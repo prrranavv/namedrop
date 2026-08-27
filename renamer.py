@@ -21,6 +21,8 @@ PROJECT = Path(__file__).resolve().parent
 HOME = Path.home()
 ROOT = Path(os.environ.get("SMART_RENAMER_ROOT", str(HOME / "Downloads"))).resolve()
 NAMER = Path(os.environ.get("NAMEDROP_BINARY", str(PROJECT / "bin" / "namedrop-namer")))
+TOAST = Path(os.environ.get("NAMEDROP_TOAST", str(PROJECT / "bin" / "namedrop-toast")))
+TOAST_ICON = Path(os.environ.get("NAMEDROP_ICON", str(PROJECT / "assets" / "NameDrop.icns")))
 STATE_DIR = Path(os.environ.get("NAMEDROP_STATE", str(HOME / "Library/Application Support/NameDrop")))
 LEDGER = STATE_DIR / "history.jsonl"
 SUPPORTED = {".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".md", ".csv", ".tsv", ".json", ".xml", ".html", ".htm"}
@@ -270,7 +272,24 @@ def write_ledger(record: dict) -> None:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
 
 
-def process_file(namer: AppleNamer, path: Path, run_id: str, apply: bool) -> dict:
+def show_rename_toast(original_name: str, renamed_name: str) -> None:
+    if not TOAST.is_file():
+        return
+    try:
+        environment = os.environ.copy()
+        environment["NAMEDROP_ICON"] = str(TOAST_ICON)
+        subprocess.Popen(
+            [str(TOAST), original_name, renamed_name],
+            env=environment,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError:
+        pass
+
+
+def process_file(namer: AppleNamer, path: Path, run_id: str, apply: bool, notify: bool = False) -> dict:
     started = time.monotonic()
     text = extract_text(path)
     if current_name_is_useful(path):
@@ -292,6 +311,8 @@ def process_file(namer: AppleNamer, path: Path, run_id: str, apply: bool) -> dic
     if apply and destination != path:
         path.rename(destination)
         write_ledger(result)
+        if notify:
+            show_rename_toast(path.name, destination.name)
     return result
 
 
@@ -369,7 +390,7 @@ def command_watch(args) -> int:
                     continue
                 run_id = "watch-" + datetime.now().strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
                 try:
-                    result = process_file(namer, path, run_id, True)
+                    result = process_file(namer, path, run_id, True, notify=True)
                     print(f"RENAMED: {path.name} -> {Path(result['renamed']).name}", flush=True)
                     processed.add(identity)
                     stable.pop(identity, None)

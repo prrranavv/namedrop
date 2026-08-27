@@ -27,6 +27,8 @@ struct NameDropHost {
         worker.arguments = [resources.appendingPathComponent("renamer.py").path, "watch"]
         var environment = ProcessInfo.processInfo.environment
         environment["NAMEDROP_BINARY"] = resources.appendingPathComponent("bin/namedrop-namer").path
+        environment["NAMEDROP_TOAST"] = resources.appendingPathComponent("bin/namedrop-toast").path
+        environment["NAMEDROP_ICON"] = resources.appendingPathComponent("NameDrop.icns").path
         worker.environment = environment
         worker.standardOutput = output
         worker.standardError = errorHandle

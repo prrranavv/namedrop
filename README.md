@@ -27,6 +27,7 @@ Rename safely and append a hash-verified undo record
 - No browser extension, API key, cloud model, account, or visible window.
 - Starts at login and automatically restarts after a crash.
 - Sleeps on macOS file events, so idle CPU usage is effectively zero.
+- Shows a subtle, focusless animation with the old and new filename after each automatic rename.
 - Never overwrites an existing file; duplicates receive `(2)`, `(3)`, and so on.
 - Treats document content as untrusted data and sanitizes model output before renaming.
 

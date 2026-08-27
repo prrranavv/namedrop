@@ -57,12 +57,17 @@ xcrun swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
   -o "$PROJECT_DIR/bin/namedrop-namer"
 
 xcrun swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
+  "$PROJECT_DIR/helper/toast.swift" \
+  -o "$PROJECT_DIR/bin/namedrop-toast"
+
+xcrun swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
   "$PROJECT_DIR/helper/host.swift" \
   -o "$APP_BINARY"
 
 cp "$PROJECT_DIR/helper/Info.plist" "$APP_DIR/Contents/Info.plist"
 cp "$PROJECT_DIR/renamer.py" "$APP_DIR/Contents/Resources/renamer.py"
 cp "$PROJECT_DIR/bin/namedrop-namer" "$APP_DIR/Contents/Resources/bin/namedrop-namer"
+cp "$PROJECT_DIR/bin/namedrop-toast" "$APP_DIR/Contents/Resources/bin/namedrop-toast"
 cp "$PROJECT_DIR/assets/NameDrop.icns" "$APP_DIR/Contents/Resources/NameDrop.icns"
 codesign --force --deep --sign - "$APP_DIR"
 
