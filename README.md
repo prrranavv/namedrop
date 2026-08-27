@@ -28,6 +28,7 @@ Rename safely and append a hash-verified undo record
 - Starts at login and automatically restarts after a crash.
 - Sleeps on macOS file events, so idle CPU usage is effectively zero.
 - Shows a subtle, focusless animation with the old and new filename after each automatic rename.
+- Stacks up to four simultaneous rename cards; swipe or drag one left or right to dismiss it early.
 - Never overwrites an existing file; duplicates receive `(2)`, `(3)`, and so on.
 - Treats document content as untrusted data and sanitizes model output before renaming.
 
@@ -60,6 +61,15 @@ Check it at any time:
 ```sh
 ./status.sh
 ```
+
+Preview the notification stack without creating or renaming files:
+
+```sh
+./test-notifications.sh
+```
+
+Pass a number from `1` to `4` to test a smaller stack. A fifth rapid rename
+replaces the oldest visible card.
 
 ## Supported files
 

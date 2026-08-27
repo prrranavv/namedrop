@@ -27,6 +27,8 @@ STATE_DIR = Path(os.environ.get("NAMEDROP_STATE", str(HOME / "Library/Applicatio
 LEDGER = STATE_DIR / "history.jsonl"
 SUPPORTED = {".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".md", ".csv", ".tsv", ".json", ".xml", ".html", ".htm"}
 MAX_TEXT = 7_000
+MAX_VISIBLE_TOASTS = 4
+TOAST_PROCESSES = []
 
 
 def inside_root(path: Path) -> bool:
@@ -273,18 +275,26 @@ def write_ledger(record: dict) -> None:
 
 
 def show_rename_toast(original_name: str, renamed_name: str) -> None:
+    global TOAST_PROCESSES
     if not TOAST.is_file():
         return
     try:
+        TOAST_PROCESSES = [(process, slot) for process, slot in TOAST_PROCESSES if process.poll() is None]
+        occupied_slots = {slot for _, slot in TOAST_PROCESSES}
+        slot = next((candidate for candidate in range(MAX_VISIBLE_TOASTS) if candidate not in occupied_slots), None)
+        if slot is None:
+            oldest_process, slot = TOAST_PROCESSES.pop(0)
+            oldest_process.terminate()
         environment = os.environ.copy()
         environment["NAMEDROP_ICON"] = str(TOAST_ICON)
-        subprocess.Popen(
-            [str(TOAST), original_name, renamed_name],
+        process = subprocess.Popen(
+            [str(TOAST), original_name, renamed_name, str(slot)],
             env=environment,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
+        TOAST_PROCESSES.append((process, slot))
     except OSError:
         pass
 
